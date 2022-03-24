@@ -1,0 +1,50 @@
+name: skynet-handler-openid-auth-plugin
+description: Adiciona a sua stack uma autenticação e autorização baseado em algum provider OpenID informado.
+types:
+  - app
+inputs:
+  - label: JwksUri fornecida pelo provedor de autenticação OpenID.
+    type: text
+    name: jwks_uri
+    default: https://some.idm.provider/auth/realms/some-realm/protocol/openid-connect/certs
+
+hooks:
+  - type: edit
+    trigger: after-render
+    path: infra/lib/{{service_name}}-service-stack.ts
+    changes:
+      - search:
+          string: "const openApiServicesProps = {"
+          insert-after:
+            snippet: snippets/jwks-parameter-add.txt
+  - type: edit
+    trigger: after-render
+    path: infra/spec/{{spec_file_name}}.yaml
+    changes:
+      - search:
+          string: 'components:'
+          insert-after:
+            snippet: snippets/spec-auth-add.txt
+  - type: run
+    trigger: after-render
+    mac:
+      - npm run infra:install:openapi
+      - npm run infra:format:fix
+      - npm run infra:build:cdk
+      - npm run source:setup:openapi
+    linux:
+      - npm run infra:install:openapi
+      - npm run infra:format:fix
+      - npm run infra:build:cdk
+      - npm run source:setup:openapi
+    windows:
+      - npm.cmd run infra:install:openapi
+      - npm.cmd run infra:format:fix
+      - npm.cmd run infra:build:cdk
+      - npm.cmd run source:setup:openapi
+
+displayName: OpenId Based Auth
+
+compatibility:
+  - OpenAPI 3.2
+  - NodeJS 14.x
